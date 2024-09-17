@@ -95,11 +95,93 @@ public final class Lexer {
     }
 
     public Token lexNumber() {
-        throw new UnsupportedOperationException(); //TODO
+        int startIndex = chars.index;
+        boolean decimal = false;
+        StringBuilder literalBuilder = new StringBuilder();
+
+        // Optional sign
+        if (peek("[-]")) {
+            literalBuilder.append(chars.get(0));
+            chars.advance();
+        }
+
+        // Read integer part
+        if (peek("[1-9]")) {
+            literalBuilder.append(chars.get(0));
+            chars.advance();
+            while (peek("[0-9]")) {
+                literalBuilder.append(chars.get(0));
+                chars.advance();
+            }
+        } else if (peek("0")) {
+            literalBuilder.append(chars.get(0));
+            chars.advance();
+        } else {
+            throw new ParseException("Invalid number format", startIndex);
+        }
+
+        // Check if there is a decimal point
+        if (peek("\\.")) {
+            decimal = true;
+            literalBuilder.append(chars.get(0));
+            chars.advance();
+
+            // Read fractional part
+            if (peek("[0-9]")) {
+                literalBuilder.append(chars.get(0));
+                chars.advance();
+                while (peek("[0-9]")) {
+                    literalBuilder.append(chars.get(0));
+                    chars.advance();
+                }
+            } else {
+                throw new ParseException("Invalid decimal format", startIndex);
+            }
+        }
+
+        String literal = literalBuilder.toString();
+
+        Token.Type type;
+        type = Token.Type.INTEGER;
+        if(decimal) {
+            type = Token.Type.DECIMAL;
+        }
+
+        return new Token(type, literal, startIndex);
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     public Token lexCharacter() {
-        throw new UnsupportedOperationException(); //TODO
+        int startIndex = chars.index;
+        StringBuilder literalBuilder = new StringBuilder();
+
+        if (!match("'")) {
+            throw new ParseException("Expected opening quote for character literal", startIndex);
+        }
+
+        if (peek("\\\\") || peek("[^']")) {
+            if (peek("\\")) { // Handle escape sequences
+                lexEscape();
+            } else {
+                literalBuilder.append(chars.get(0));
+                chars.advance();
+            }
+        } else {
+            throw new ParseException("Invalid character literal content", startIndex);
+        }
+
+        if (literalBuilder.length() != 1) {
+            throw new ParseException("Character literal must contain exactly one character", startIndex);
+        }
+
+        if (!match("'")) {
+            throw new ParseException("Expected closing quote for character literal", startIndex);
+        }
+
+        String literal = literalBuilder.toString();
+
+        return new Token(Token.Type.CHARACTER, "'" + literal + "'", startIndex);
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     public Token lexString() {
