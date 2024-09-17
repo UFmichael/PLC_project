@@ -2,6 +2,10 @@ package plc.project;
 
 import java.util.List;
 
+import java.util.ArrayList;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 /**
  * The lexer works through three main functions:
  *
@@ -28,7 +32,18 @@ public final class Lexer {
      * whitespace where appropriate.
      */
     public List<Token> lex() {
-        throw new UnsupportedOperationException(); //TODO
+        List<Token> tokens = new ArrayList<>();
+
+        while (chars.has(0)) {
+            if (peek("[ \t\r\n]")) {
+                chars.advance();
+            } else {
+                tokens.add(lexToken());
+            }
+        }
+
+        return tokens;
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     /**
@@ -40,11 +55,43 @@ public final class Lexer {
      * by {@link #lex()}
      */
     public Token lexToken() {
-        throw new UnsupportedOperationException(); //TODO
+        if (peek("[a-zA-Z_][A-Za-z0-9_]*]")) {
+            return lexIdentifier();
+        } else if (peek("[0-9]+(\\.?(?:[0-9]))*")) {
+            return lexNumber();
+        } else if (peek("[A-Za-z ] | \\[brnt\"'\\]")) {
+            return lexCharacter();
+        } else if (peek("[A-Za-z....]+ | \\[brnt\"'\\]")) {
+            return lexString();
+        } else if (peek("=|==|!=|>=|<=|&&|\\|\\||\\(|\\)|;")) {
+            return lexOperator();
+        } else {
+            chars.advance();
+            return null;
+            //random edge case idk
+        }
+
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     public Token lexIdentifier() {
-        throw new UnsupportedOperationException(); //TODO
+        int startIndex = chars.index;
+        if (!peek("[A-Za-z]")) {
+            throw new ParseException("Identifer doesn't start with character", chars.index);
+        }
+        StringBuilder literalBuilder = new StringBuilder();
+        literalBuilder.append(chars.get(0));
+        chars.advance();
+
+        while (peek("[A-Za-z0-9]")) {
+            literalBuilder.append(chars.get(0));
+            chars.advance();
+        }
+
+        String literal = literalBuilder.toString();
+
+        return new Token(Token.Type.IDENTIFIER, literal, startIndex);
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     public Token lexNumber() {
