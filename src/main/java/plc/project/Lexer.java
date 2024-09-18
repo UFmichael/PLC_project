@@ -185,15 +185,84 @@ public final class Lexer {
     }
 
     public Token lexString() {
-        throw new UnsupportedOperationException(); //TODO
+        int startIndex = chars.index;
+        StringBuilder literalBuilder = new StringBuilder();
+
+        if (!match("\"")) {
+            throw new ParseException("Expected opening quote for string literal", startIndex);
+        }
+
+        while (!peek("\"")) {
+            if (!chars.has(0)) {
+                throw new ParseException("Unterminated string literal", startIndex);
+            }
+
+            if (match("\\")) {
+                lexEscape();
+                literalBuilder.append(chars.get(0));
+                chars.advance();
+            } else {
+                literalBuilder.append(chars.get(0));
+                chars.advance();
+            }
+        }
+
+        if (!match("\"")) {
+            throw new ParseException("Expected closing quote for string literal", startIndex);
+        }
+
+        return new Token(Token.Type.STRING, "\"" + literalBuilder.toString() + "\"", startIndex);
+        // throw new UnsupportedOperationException(); //TODO
     }
 
     public void lexEscape() {
-        throw new UnsupportedOperationException(); //TODO
+        if (!chars.has(0)) {
+            throw new ParseException("Unterminated escape sequence", chars.index);
+        }
+        //idk what i'm actually supposed to do here
+        char nextChar = chars.get(0);
+        switch (nextChar) {
+            case 'n':
+                chars.advance();  // '\n' -> newline
+                break;
+            case 't':
+                chars.advance();  // '\t' -> tab
+                break;
+            case 'r':
+                chars.advance();  // '\r' -> carriage return
+                break;
+            case '\\':
+                chars.advance();  // '\\' -> backslash
+                break;
+            case '\"':
+                chars.advance();  // '\"' -> double quote
+                break;
+            case '\'':
+                chars.advance();  // '\'' -> single quote (for characters)
+                break;
+            default:
+                throw new ParseException("Invalid escape sequence: \\" + nextChar, chars.index);
+        }
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     public Token lexOperator() {
-        throw new UnsupportedOperationException(); //TODO
+        StringBuilder literalBuilder = new StringBuilder();
+        int startIndex = chars.index;
+
+        if (match("==") || match("!=") || match(">=") || match("<=") || match("&&") || match("||")) {
+            literalBuilder.append(chars.get(0));
+            literalBuilder.append(chars.get(1));
+            return new Token(Token.Type.OPERATOR, literalBuilder.toString(), startIndex);
+        }
+
+        if (match("=") || match(">") || match("<") || match("+") || match("-") || match("*") || match("/") || match("!") || match("(") || match(")") || match(";")) {
+            literalBuilder.append(chars.get(0));
+            return new Token(Token.Type.OPERATOR, literalBuilder.toString(), startIndex);
+        }
+
+        throw new ParseException("Invalid operator", chars.index);
+        //throw new UnsupportedOperationException(); //TODO
     }
 
     /**
